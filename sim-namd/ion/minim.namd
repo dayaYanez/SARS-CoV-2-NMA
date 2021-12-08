@@ -1,0 +1,75 @@
+structure          solvate.psf
+coordinates        solvate.pdb
+
+set temperature    310  ;# target temperature used several times below
+# starting from scratch
+temperature         $temperature    ;# initialize velocities randomly
+
+# continuing a run
+#set inputname      myinput          ;# only need to edit this in one place!
+#binCoordinates     $inputname.coor  ;# coordinates from last run (binary)
+#binVelocities      $inputname.vel   ;# velocities from last run (binary)
+#extendedSystem	   $inputname.xsc   ;# cell dimensions from last run
+
+outputName         minCov   ;# base name for output from this run
+
+restartfreq         400     ;# 500 steps = every 1ps
+dcdfreq             400
+xstFreq             400
+outputEnergies      100     ;# 100 steps = every 0.2 ps
+outputTiming       1000     ;# shows time per step and time to completion
+
+# Force-Field Parameters
+paraTypeCharmm	    on
+parameters          par_all36_lipid_prot_carb.prm 
+parameters	    par_all36_carb.prm
+parameters	    par_all36_cgenff.prm
+parameters	    par_all36_lipid.prm
+parameters	    par_all36m_prot.prm
+parameters	    par_all36_na.prm
+parameters	    par_interface.prm
+parameters	    
+
+# These are specified by CHARMM
+exclude             scaled1-4
+1-4scaling          1.0
+switching           on
+
+# You have some freedom choosing the cutoff
+cutoff              12. ;# may use smaller, maybe 10., with PME
+switchdist          10. ;# cutoff - 2.
+
+# Promise that atom won't move more than 2A in a cycle
+pairlistdist        14. ;# cutoff + 2.
+
+# Integrator Parameters
+timestep            0.1  ;# 2fs/step
+rigidBonds          all  ;# needed for 2fs steps
+nonbondedFreq       1    ;# nonbonded forces every step
+fullElectFrequency  2    ;# PME only every other step
+
+# Constant Temperature Control
+langevin            on            ;# langevin dynamics
+langevinDamping     1.            ;# damping coefficient of 1/ps
+langevinTemp        $temperature  ;# random noise at this level
+langevinHydrogen    no            ;# don't couple bath to hydrogens
+
+# Periodic Boundary conditions
+cellBasisVector1 140.41400146484375 0 0
+cellBasisVector2 0 147.25999450683594 0
+cellBasisVector3 0 0 185.30699157714844
+cellOrigin 220.92042541503906 213.2463836669922 203.15023803710938
+
+wrapWater           on              ;# wrap water to central cell
+wrapAll             on              ;# wrap other molecules too
+wrapNearest         off             ;# use for non-rectangular cells
+
+langevinPiston        on
+langevinPistonTarget  1.01325      ;# pressure in bar -> 1 atm
+langevinPistonPeriod  100.         ;# oscillation period around 100 fs
+langevinPistonDecay   50.          ;# oscillation decay time of 50 fs
+langevinPistonTemp    $temperature ;# coupled to heat bath.
+
+minimize            500          ;# lower potential energy for 1000 steps
+reinitvels          $temperature  ;# since minimization zeros velocities
+run 1000000 ;# 100ps
